@@ -1,39 +1,48 @@
 import random
 import pygame
 
-pygame.init()
-WIDTH, HEIGHT = 600, 600
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
-GREEN = (0, 255, 0)
-LIGHTBLUE = (0, 0, 127)
-FPS = 6
-SCORE = 0
-LEVEL = 1
-BLOCK_SIZE = 20
+pygame.init()  # Инициализация Pygame
+WIDTH, HEIGHT = 600, 600  # Установка ширины и высоты окна
+BLACK = (0, 0, 0)  # Черный цвет
+WHITE = (255, 255, 255)  # Белый цвет
+RED = (255, 0, 0)  # Красный цвет
+BLUE = (0, 0, 255)  # Синий цвет
+YELLOW = (255, 255, 0)  # Желтый цвет
+GREEN = (0, 255, 0)  # Зеленый цвет
+LIGHTBLUE = (0, 0, 127)  # Светло-синий цвет
+FPS = 6  # Количество кадров в секунду
+SCORE = 0  # Начальный счет
+LEVEL = 1  # Начальный уровень
+BLOCK_SIZE = 20  # Размер блока
 
+# Создание окна
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
+# Экран для отображения при проигрыше
 LOSS_SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
+
+# Загрузка музыки и звуковых эффектов
 background_sound = pygame.mixer.Sound("./materials/Snake Game - Theme Song.mp3")
 background_sound = pygame.mixer.music.load("./materials/Snake Game - Theme Song.mp3")
 eat_sound = pygame.mixer.Sound("./materials/snake-hissing-6092.mp3")
-pygame.display.set_caption('Snake')
+
+pygame.display.set_caption('Snake')  # Установка заголовка окна
+# Установка шрифтов
 score_font = pygame.font.SysFont('Verdana', 20)
 level_font = pygame.font.SysFont('Verdana', 20)
 pause_font = pygame.font.SysFont('Verdana', 30)
 settings_font = pygame.font.SysFont('Verdana', 20)
-running = True
-paused = False
 
+running = True  # Флаг для работы игрового цикла
+paused = False  # Флаг для паузы в игре
+
+# Класс для представления точки в пространстве
 class Point:
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
+# Класс для фруктов (еды, ядов, ускорителей)
 class Fruit:
     def __init__(self, x, y, colour, score, timer, max_timer):
         self.location = Point(x, y)
@@ -41,14 +50,18 @@ class Fruit:
         self.score = score
         self.timer = timer
         self.max_timer = max_timer
+
+    # Получение координаты x
     @property
     def x(self):
         return self.location.x
 
+    # Получение координаты y
     @property
     def y(self):
         return self.location.y
 
+    # Отображение фрукта на экране
     def draw(self):
         pygame.draw.rect(
             SCREEN,
@@ -60,15 +73,21 @@ class Fruit:
                 BLOCK_SIZE,
             )
         )
+
+    # Обновление координат фрукта и таймера
     def update(self):
         self.location.x = random.randint(0, WIDTH // BLOCK_SIZE - 1)
         self.location.y = random.randint(0, HEIGHT // BLOCK_SIZE - 1)
         self.timer = 0
+
+    # Увеличение таймера и обновление фрукта при достижении максимального значения таймера
     def time(self, dt):
         self.timer += dt
         if self.timer >= self.max_timer:
             self.update()
             self.timer = 0
+
+    # Увеличение уровня при достижении определенного счета
     def level(self):
         global SCORE
         global LEVEL
@@ -77,18 +96,22 @@ class Fruit:
             LEVEL += 1
             FPS += 2
 
+# Класс для еды
 class Food(Fruit):
     def __init__(self):
         super().__init__(10, 10, YELLOW, 1, 0, 5)
 
+# Класс для яда
 class Poison(Fruit):
     def __init__(self):
         super().__init__(20, 20, GREEN, -1, 0, 5)
 
+# Класс для ускорителя
 class Booster(Fruit):
     def __init__(self):
         super().__init__(20, 10, LIGHTBLUE, 5, 0, 5)
 
+# Класс для змеи
 class Snake:
     def __init__(self):
         self.points = [
@@ -96,6 +119,7 @@ class Snake:
             Point(WIDTH // BLOCK_SIZE // 2 + 1, HEIGHT // BLOCK_SIZE // 2),
         ]
 
+    # Обновление положения змеи на экране
     def update(self):
         head = self.points[0]
 
@@ -121,6 +145,7 @@ class Snake:
                 )
             )
 
+    # Движение змеи в определенном направлении
     def move(self, dx, dy):
         global running
         for idx in range(len(self.points) - 1, 0, -1):
@@ -131,9 +156,11 @@ class Snake:
         self.points[0].y += dy
         
         head = self.points[0]
+        # Проверка на столкновение змеи с границами экрана
         if head.x >= WIDTH // BLOCK_SIZE or head.x < 0 or head.y >= HEIGHT // BLOCK_SIZE or head.y < 0:
             running = False
 
+    # Проверка на столкновение змеи с фруктом
     def check_collision(self, food):
         if self.points[0].x != food.x:
             return False
@@ -141,12 +168,14 @@ class Snake:
             return False
         return True
 
+# Отрисовка сетки на экране
 def draw_grid():
     for x in range(0, WIDTH, BLOCK_SIZE):
         pygame.draw.line(SCREEN, BLACK, (x, 0), (x, HEIGHT), width=1)
     for y in range(0, HEIGHT, BLOCK_SIZE):
         pygame.draw.line(SCREEN, BLACK, (0, y), (WIDTH, y), width=1)
 
+# Отображение меню настроек
 def settings_menu():
     global BLOCK_SIZE, FPS
     selected_option = 0
@@ -182,6 +211,7 @@ def settings_menu():
     BLOCK_SIZE = values[0]
     FPS = values[1]
 
+# Отображение главного меню
 def main_menu():
     global paused, running
     selected_option = 0
@@ -215,13 +245,14 @@ def main_menu():
                 running = False
                 running_main_menu = False
 
+# Главная функция игры
 def main():
     global SCORE
     global LEVEL
     global FPS
     global running
     global paused
-    main_menu()  # Show main menu first
+    main_menu()  # Показываем главное меню сначала
     snake = Snake()
     food = Food()
     poison = Poison()
@@ -248,7 +279,7 @@ def main():
                     elif event.key == pygame.K_RIGHT:
                         dx, dy = +1, 0
                     elif event.key == pygame.K_s:
-                        settings_menu()  # Open settings menu on 'S' key press
+                        settings_menu()  # Открываем меню настроек при нажатии на клавишу 'S'
                 if event.key == pygame.K_ESCAPE:
                     paused = not paused
 
@@ -292,4 +323,4 @@ def main():
         pygame.display.flip()
         clock.tick(FPS)
 
-main()
+main() 
