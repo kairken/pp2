@@ -1,29 +1,39 @@
 import random
-
 import pygame
-
 pygame.init()
+
+#Установка размеров окна
 WIDTH, HEIGHT = 400, 600
+
+#Создание основного экрана и экрана проигрыша
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 LOSS_SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
+
+#Установка цветов
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
+
+#Переменные для очков и жизней 
 SCORE = 0
 LIFE = 3
+
+# Создание часов для управления фреймрейтом
 clock = pygame.time.Clock()
+
+#Загрузка фона
 background = pygame.image.load('./materials/AnimatedStreet.png')
-score_font = pygame.font.SysFont("Verdana", 30)
-life_font = pygame.font.SysFont("Verdana", 30)
+
+#Загрузка звуков
 background_sound = pygame.mixer.Sound("./materials/background.wav")
 crush_sound = pygame.mixer.Sound("./materials/crash.wav")
+
+# Переменная для управления движением фона
 background_y = 0
 
-
-
-
+#враг
 class Enemy(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -46,6 +56,7 @@ class Enemy(pygame.sprite.Sprite):
                 0,
             )
 
+#игрок
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -64,9 +75,10 @@ class Player(pygame.sprite.Sprite):
         elif pressed[pygame.K_RIGHT] and self.rect.x + self.speed + self.rect.width <= WIDTH:
             self.rect.move_ip(self.speed, 0)
 
-    
+#Группа для монет
 coins = pygame.sprite.Group()
 
+#монета
 class Coin(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -96,75 +108,105 @@ class Coin(pygame.sprite.Sprite):
                 random.randint(self.rect.width, WIDTH - self.rect.width),
                 0,
             )
+
     def collide(self, player):
         if pygame.sprite.collide_rect(self, player):
-            self.kill()  # Remove the sprite from all sprite groups it belongs to
+            self.kill()  # Удаляем спрайт из всех групп, к которым он принадлежит
             return True
         
         return False
+    
     def is_mega_coin(self):
         return self.random_number in [0,1,2]
-    
+
 def main():
-    #creating all characters and resources
     global background_y
     global coins
+
+    # Флаг для управления основным циклом
     running = True
+
+    # Создание игрока, врага и монеты
     player = Player()
     enemy = Enemy()
     coin = Coin()
+
+    # Создание группы врагов и добавление в неё врага
     enemies = pygame.sprite.Group()
     enemies.add(enemy)
+
+    # Добавление монеты в группу
     coins.add(coin)
+
+    # Воспроизведение фоновой музыки
     background_sound.play(-1)
 
     while running:
         global SCORE
         global LIFE
+
+        # Заливка белым цветом
         SCREEN.fill(WHITE)
+
+        # Отображение фона
         background_rect = background.get_rect()
         SCREEN.blit(background, (0, background_y))
         SCREEN.blit(background, (0, background_y - background_rect.height)) 
-        background_y += 4  # Update the y-coordinate to make the image move
+        background_y += 4  
+
+        # Обновление координаты фона для эффекта движения
         if background_y > background_rect.height:
             background_y = 0
         
+        # Создание шрифта для отображения текущего счета
+        score_font = pygame.font.SysFont("Verdana", 30)
         score = score_font.render(f"Your score: {SCORE}", True, BLACK)
         SCREEN.blit(score, (0, 0))
+
+        # Создание шрифта для отображения количества жизней
+        life_font = pygame.font.SysFont("Verdana", 30)       
         life = life_font.render(f"Your life: {LIFE}", True, BLACK)
         SCREEN.blit(life, (0, 20))
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT or LIFE == 0:
                 running = False
 
+        # Обновление игрока и врага
         player.update()
         enemy.update()
-        
-        # creating a new coin instead of deleted one
+
+        # Создание новой монеты после сбора текущей
         for coin in coins:
             if coin.collide(player):
                 coins.remove(coin)
                 SCORE += 1
                 coins.add(Coin())
                 if coin.is_mega_coin():
-                        SCORE += 4
+                    SCORE += 4
+        
+        # Увеличение скорости врага при достижении определенного счета
         if SCORE > 30:
             enemy.speed = random.randint(8, 11)
+
+        # Завершение игры при окончании жизней игрока
         if LIFE == 0:
             running = False
 
+        # Отображение и обновление монеты, игрока и врага
         coin.draw(SCREEN)
         coin.update()
         player.draw(SCREEN)
         enemy.draw(SCREEN)
 
+        # Завершение игры при столкновении игрока с врагом
         if pygame.sprite.spritecollide(player, enemies, False):
-            background_sound.stop() # stop playing the background music
-            crush_sound.play() # play the crash sound effect
+            background_sound.stop() 
+            crush_sound.play() 
             pygame.time.wait(2000)
             running = False
         
+        # Отображение экрана
         pygame.display.flip()
         clock.tick(60)
-
 main()
